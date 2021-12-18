@@ -218,67 +218,64 @@ def build(bld):
                                      'ZIX_INTERNAL'])
 
     if bld.env.BUILD_TESTS:
-        test_libs      = libs
-        test_cflags    = ['']
-        test_linkflags = ['']
-        if not bld.env.NO_COVERAGE:
-            test_cflags    += ['--coverage']
-            test_linkflags += ['--coverage']
+        #test_libs      = libs
+        #test_cflags    = ['']
+        #test_linkflags = ['']
+        #if not bld.env.NO_COVERAGE:
+            #test_cflags    += ['--coverage']
+            #test_linkflags += ['--coverage']
 
         # Profiled static library for test coverage
-        obj = bld(features     = 'c cstlib',
-                  source       = source,
-                  includes     = ['.', 'include', './src'],
-                  name         = 'libsord_profiled',
-                  target       = 'sord_profiled',
-                  install_path = '',
-                  defines      = defines + ['SORD_STATIC',
-                                            'SORD_INTERNAL',
-                                            'ZIX_STATIC',
-                                            'ZIX_INTERNAL'],
-                  cflags       = test_cflags,
-                  linkflags    = test_linkflags,
-                  lib          = test_libs,
-                  uselib       = 'SERD')
+        #obj = bld(features     = 'c cstlib',
+                  #source       = source,
+                  #includes     = ['.', 'include', './src'],
+                  #name         = 'libsord_profiled',
+                  #target       = 'sord_profiled',
+                  #install_path = '',
+                  #defines      = defines + ['SORD_STATIC',
+                                            #'SORD_INTERNAL',
+                                            #'ZIX_STATIC',
+                                            #'ZIX_INTERNAL'],
+                  #cflags       = test_cflags,
+                  #linkflags    = test_linkflags,
+                  #lib          = test_libs,
+                  #uselib       = 'SERD')
 
         # Unit test program
         obj = bld(features     = 'c cprogram',
                   source       = 'src/sord_test.c',
                   includes     = ['.', 'include', './src'],
-                  use          = 'libsord_profiled',
-                  lib          = test_libs,
+                  use          = 'libsord_static',
+                  lib          = libs,
                   target       = 'sord_test',
                   install_path = '',
                   defines      = defines + ['SORD_STATIC', 'ZIX_STATIC'],
-                  cflags       = test_cflags,
-                  linkflags    = test_linkflags,
+                  cflags       = libflags,
                   uselib       = 'SERD')
 
         # Static profiled sordi for tests
-        obj = bld(features     = 'c cprogram',
-                  source       = 'src/sordi.c',
-                  includes     = ['.', 'include', './src'],
-                  use          = 'libsord_profiled',
-                  lib          = test_libs,
-                  target       = 'sordi_static',
-                  install_path = '',
-                  defines      = defines + ['SORD_STATIC', 'ZIX_STATIC'],
-                  cflags       = test_cflags,
-                  linkflags    = test_linkflags,
-                  uselib       = 'SERD')
+        #obj = bld(features     = 'c cprogram',
+                  #source       = 'src/sordi.c',
+                  #includes     = ['.', 'include', './src'],
+                  #use          = 'libsord_static',
+                  #lib          = libs,
+                  #target       = 'sordi_static',
+                  #install_path = '',
+                  #defines      = defines + ['SORD_STATIC', 'ZIX_STATIC'],
+                  #cflags       = libflags,
+                  #uselib       = 'SERD')
 
         # C++ build test
         if bld.env.COMPILER_CXX:
             obj = bld(features     = 'cxx cxxprogram',
                       source       = 'src/sordmm_test.cpp',
                       includes     = ['.', 'include', './src'],
-                      use          = 'libsord_profiled',
-                      lib          = test_libs,
+                      use          = 'libsord_static',
+                      lib          = libs,
                       target       = 'sordmm_test',
                       install_path = '',
                       defines      = defines + ['SORD_STATIC', 'ZIX_STATIIC'],
-                      cxxflags     = test_cflags,
-                      linkflags    = test_linkflags,
+                      cxxflags     = libflags,
                       uselib       = 'SERD')
 
     # Utilities
@@ -295,16 +292,18 @@ def build(bld):
                       uselib       = 'SERD',
                       target       = i,
                       install_path = '${BINDIR}',
-                      defines      = defines)
+                      defines      = defines,
+                      linkflags    = [''])
             if not bld.env.BUILD_SHARED or bld.env.STATIC_PROGS:
                 obj.use = 'libsord_static'
+                #obj.defines += ['SORD_STATIC', 'ZIX_STATIIC']
             if bld.env.STATIC_PROGS:
                 obj.env.SHLIB_MARKER = obj.env.STLIB_MARKER
                 obj.linkflags        = ['-static', '-Wl,--start-group']
             if i == 'sord_validate':
                 obj.uselib    += ' PCRE'
-                obj.cflags    = bld.env.PTHREAD_CFLAGS
-                obj.linkflags = bld.env.PTHREAD_LINKFLAGS
+                obj.cflags    = obj.linkflags + bld.env.PTHREAD_CFLAGS
+                obj.linkflags = obj.linkflags + bld.env.PTHREAD_LINKFLAGS
 
     # Documentation
     autowaf.build_dox(bld, 'SORD', SORD_VERSION, top, out)
@@ -346,7 +345,7 @@ def test(tst):
         pass
 
     srcdir = tst.path.abspath()
-    sordi = './sordi_static'
+    sordi = './sordi'
     base = 'http://example.org/'
     snippet = '<{0}s> <{0}p> <{0}o> .\n'.format(base)
     manifest = 'file://%s/tests/manifest.ttl' % srcdir.replace('\\', '/')
